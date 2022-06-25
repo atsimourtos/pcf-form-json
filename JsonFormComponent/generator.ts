@@ -1,4 +1,4 @@
-import { convertToJson } from './common';
+import { convertToJson, isValidHttpUrl } from './common';
 import { generateBoolean } from './controls/boolean';
 import { generateDate, getDateValue } from './controls/date';
 import { generateDefault } from './controls/default';
@@ -11,46 +11,68 @@ import { UiDefinition, FormValue } from './types';
 import { generateDateTime, setDateTimeValue } from './controls/datetime';
 
 export class Generator {
+
   private initialFormValue: FormValue;
+  private metaDataSchema: UiDefinition;
+  private loadedSchemaUri: string;
+  private jsonSchema: string;
 
   constructor(
     private container: HTMLDivElement,
-    private context: ComponentFramework.Context<IInputs>,
-    private submittedFunction: (result: string) => void
+    context: ComponentFramework.Context<IInputs>,
+    private onChange: (result: string) => void
   ) {
     this.initialFormValue = convertToJson<FormValue>(
       context.parameters.StringProperty.raw
     );
   }
 
-  generate() {
-    if (!this.context.parameters.ControlFormJson.raw || 
-      this.context.parameters.ControlFormJson.raw === 'val') return;
+  async generate(context: ComponentFramework.Context<IInputs>) {
 
-    const definition = convertToJson<UiDefinition>(
-      this.context.parameters.ControlFormJson.raw
+    if (!context.parameters.ControlFormJson.raw || 
+      context.parameters.ControlFormJson.raw === 'val') return;
+
+    var jsonSchemaSource = context.parameters.ControlFormJson.raw;
+
+    if(isValidHttpUrl(jsonSchemaSource)) {
+      if (this.loadedSchemaUri !== jsonSchemaSource) {
+        this.jsonSchema = await (await fetch(jsonSchemaSource)).text();
+        this.loadedSchemaUri = jsonSchemaSource;
+      }
+    }
+    else {
+      this.loadedSchemaUri = '';
+      this.jsonSchema = jsonSchemaSource;
+    }
+
+    this.metaDataSchema = convertToJson<UiDefinition>(
+      this.jsonSchema
     );
+
     document.getElementById('insurgo-custom-form')?.remove();
 
     const mainDiv = document.createElement('div');
     mainDiv.setAttribute('id', 'insurgo-custom-form');
 
-    for (const control of definition.controls) {
+    for (const control of this.metaDataSchema.controls) {
+
+      const typeName = control.typeName ?? control.name;
       const value = this.initialFormValue[control.name];
 
       const div = this.generateFormControlDiv();
       const label = this.generateLabel(control.label);
       div.appendChild(label);
 
+      let shouldSaveFormOnChange = true;
       let controlElement: HTMLElement;
       switch (control.type) {
         case 'boolean':
           controlElement = generateBoolean(control, value as boolean);
           break;
         case 'lookup':
-          const currentDefinition = definition.lookupMetadata[control.name];
+          const currentDefinition = this.metaDataSchema.lookupMetadata[typeName];
           controlElement = generateLookup(
-            this.context.utils,
+            context.utils,
             control,
             currentDefinition,
             value as ComponentFramework.EntityReference[]
@@ -60,11 +82,11 @@ export class Generator {
           controlElement = generateNumber(control, value as number);
           break;
         case 'optionset':
-          const optionSets = definition.optionSetMetadata[control.name];
+          const optionSets = this.metaDataSchema.optionSetMetadata[typeName];
           controlElement = generateOptionSet(control, value as number, optionSets);
           break;
         case 'checkbox':
-          const metadata = definition.optionSetMetadata[control.name];
+          const metadata = this.metaDataSchema.optionSetMetadata[typeName];
           controlElement = generateCheckbox(control, metadata, value as number[] | string[] | null);
           break;
         case 'date':
@@ -77,26 +99,20 @@ export class Generator {
           controlElement = generateDefault(control, value as string);
           break;
       }
+
+      controlElement.onchange = () => this.saveForm();
+
       div.appendChild(controlElement);
 
       mainDiv.appendChild(div);
     }
 
-    const buttonDiv = this.generateFormControlDiv();
-    const buttonSubmit = document.createElement('button');
-    buttonSubmit.setAttribute('class', 'form-control btn btn-primary');
-    buttonSubmit.innerText = 'Save';
-    buttonSubmit.onclick = () => this.saveForm(definition);
-    buttonDiv.appendChild(buttonSubmit);
-
-    mainDiv.appendChild(buttonDiv);
-
     this.container.appendChild(mainDiv);
   }
 
-  saveForm(uiDefinition: UiDefinition) {
-    const result = {} as FormValue;
-    for (const control of uiDefinition.controls) {
+  private saveForm() {
+
+    for (const control of this.metaDataSchema.controls) {
       if (control.type == 'checkbox') {
         setCheckBoxValue(control);
       } else if (control.type == 'datetime') {
@@ -108,7 +124,7 @@ export class Generator {
       ) as HTMLInputElement;
       if (!element) continue;
 
-      result[control.name] =
+      this.initialFormValue[control.name] =
         control.type == 'boolean'
           ? element.checked
           : control.type == 'number'
@@ -126,8 +142,7 @@ export class Generator {
                       : element.value;
     }
 
-    const text = JSON.stringify(result);
-    this.submittedFunction(text);
+    this.onChange(JSON.stringify(this.initialFormValue));
   }
 
   private generateLabel(labelName: string): HTMLLabelElement {
@@ -142,5 +157,9 @@ export class Generator {
     div.setAttribute('class', 'form-group');
 
     return div;
+  }
+
+  public getData(): string{
+    return JSON.stringify(this.initialFormValue);
   }
 }

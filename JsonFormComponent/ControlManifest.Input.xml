@@ -1,21 +1,15 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest>
-  <control namespace="Insurgo" constructor="JsonFormComponent" version="1.4.0" 
-    display-name-key="Json Form Component" description-key="Display JSON format text as a Bootstrap Form." 
-    control-type="standard">
+  <control namespace="Insurgo" constructor="JsonFormComponent" version="1.5.4" display-name-key="Json Form Component" description-key="Display JSON format text as a Bootstrap Form." control-type="standard">
     <type-group name="strings">
       <type>Multiple</type>
       <type>SingleLine.Text</type>
       <type>SingleLine.TextArea</type>
     </type-group>
-    <property name="StringProperty" display-name-key="String Property" 
-      description-key="JSON represent value of PCF." of-type-group="strings" 
-      usage="bound" required="true" />
-    <property name="ControlFormJson" display-name-key="Control Form Json" 
-      description-key="Collection of controls to define the value of the PCF." 
-      of-type-group="strings" usage="input" required="true" />
+    <property name="StringProperty" display-name-key="String Property" description-key="JSON represent value of PCF." of-type-group="strings" usage="bound" required="true" />
+    <property name="ControlFormJson" display-name-key="Control Form Json" description-key="Collection of controls to define the value of the PCF." of-type-group="strings" usage="input" required="true" />
     <resources>
-      <code path="index.ts" order="1"/>
+      <code path="index.ts" order="1" />
       <css path="../node_modules/bootstrap/dist/css/bootstrap.min.css" order="1" />
       <css path="css/site.css" order="2" />
     </resources>

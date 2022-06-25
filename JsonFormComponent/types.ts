@@ -12,6 +12,7 @@ export interface ControlDefinition {
   name: string;
   label: string;
   type: ControlType;
+  typeName: string;
 }
 
 export interface OptionSetDefinition {

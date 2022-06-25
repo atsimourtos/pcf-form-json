@@ -10,7 +10,8 @@ export class JsonFormComponent
   private _container: HTMLDivElement;
   private _notifyOutputChanged: () => void;
   private _result: string;
-
+  private generator: Generator;
+  
   constructor() {}
   public init(
     context: ComponentFramework.Context<IInputs>,
@@ -20,17 +21,16 @@ export class JsonFormComponent
   ) {
     this._container = container;
     this._notifyOutputChanged = notifyOutputChanged;
-    new Generator(this._container, context, (result) => {
+    this.generator = new Generator(this._container, context, (result : string) => {
       this._result = result;
       this._notifyOutputChanged();
-    }).generate();
+    });
+
+    //this.generator.generate(context);
   }
 
   public updateView(context: ComponentFramework.Context<IInputs>): void {
-    new Generator(this._container, context, (result) => {
-      this._result = result;
-      this._notifyOutputChanged();
-    }).generate();
+    this.generator.generate(context);
   }
 
   public getOutputs(): IOutputs {

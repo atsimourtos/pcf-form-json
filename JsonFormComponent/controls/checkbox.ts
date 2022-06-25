@@ -13,13 +13,13 @@ export function generateCheckbox(
     for (const option of metadata) {
         const divOption = document.createElement('div');
         divOption.setAttribute('class', 'form-check form-check-inline');
-
+        
         const checkbox = document.createElement('input');
         checkbox.setAttribute('type', 'checkbox');
         checkbox.setAttribute('class', 'form-check-input');
         checkbox.setAttribute('name', CHECKBOX_INITIAL_NAME + control.name.toLowerCase());
         checkbox.setAttribute('value', option.value.toString());
-        if (arrayValues && arrayValues.indexOf(option.value) > -1) {
+        if (arrayValues && arrayValues.filter(x => x == option.value).length > 0) {
             checkbox.setAttribute('checked', '');
         }
         divOption.appendChild(checkbox);
